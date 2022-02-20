@@ -50,21 +50,21 @@ class TestPID(unittest.TestCase):
     def test_length(self):
         for i in self.SINGLE_LENGTH_PIDS:
             pid = dut.PID(i)
-            self.assertIs(pid.length, dut.PidLength.SINGLE)
+            self.assertIs(pid.length, dut.PID.PidLength.SINGLE)
         for i in self.DOUBLE_LENGTH_PIDS:
             pid = dut.PID(i)
-            self.assertIs(pid.length, dut.PidLength.DOUBLE)
+            self.assertIs(pid.length, dut.PID.PidLength.DOUBLE)
         for i in self.VARIABLE_LENGTH_PIDS:
             pid = dut.PID(i)
-            self.assertIs(pid.length, dut.PidLength.VARIABLE)
+            self.assertIs(pid.length, dut.PID.PidLength.VARIABLE)
         for i in self.DLESCAPE_PIDS:
             pid = dut.PID(i)
-            self.assertIs(pid.length, dut.PidLength.DLESCAPE)
+            self.assertIs(pid.length, dut.PID.PidLength.DLESCAPE)
 
     def test_unreachable(self):
         pid = dut.PID(0)
         pid._i = 1234
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(ValueError):
             _ = pid.length
 
 
@@ -127,6 +127,19 @@ class TestFixedLengthParameter(unittest.TestCase):
             self.assertEqual(dut.FixedLengthParameter(
                 dut.PID(i), v).to_bytes(),
                              b)
+
+    def test_formatted_lengths(self):
+        for i in TestPID.SINGLE_LENGTH_PIDS:
+            parameter = dut.FixedLengthParameter(dut.PID(i), b'8')
+            self.assertEqual(len(parameter.to_bytes()), 2)
+        # when given a single byte, double-length parameters should still
+        # return 3
+        for i in TestPID.DOUBLE_LENGTH_PIDS:
+            parameter = dut.FixedLengthParameter(dut.PID(i), b'8')
+            self.assertEqual(len(parameter.to_bytes()), 3)
+        for i in TestPID.DOUBLE_LENGTH_PIDS:
+            parameter = dut.FixedLengthParameter(dut.PID(i), b'88')
+            self.assertEqual(len(parameter.to_bytes()), 3)
 
 
 class TestVariableLengthParameter(unittest.TestCase):
@@ -219,24 +232,41 @@ class TestMessage(unittest.TestCase):
             self.assertEqual(m.mid_as_bytes,
                              i.to_bytes(1, dut._LITTLE_ENDIAN))
 
+    def test_unrepresentable(self):
+        # per the documentation, we should be able to instantiate cases without
+        # error but for which to_bytes() will fail.
+
+        # we should be able to successfully instantiate with empty parameters
+        msg = dut.Message(1, [])
+        # but to_bytes should then fail
+        with self.assertRaises(ValueError):
+            msg.to_bytes()
+
+        # we should be able to successfully instantiate with too many params
+        msg = dut.Message(1, [dut.FixedLengthParameter(dut.PID(1), b'a')]*10)
+        # but to_bytes should then fail
+        with self.assertRaises(ValueError):
+            msg.to_bytes()
+
     def test_parameters(self):
         # TODO test getter
         pass
 
     def test_to_bytes(self):
         # TODO impl
+        # include list of two page-2 parameters to make sure we do that right
         pass
 
     @staticmethod
     def _parameter_from_pid(pid: dut.PID) -> dut.Parameter:
 
-        if pid.length == dut.PidLength.SINGLE:
+        if pid.length == dut.PID.PidLength.SINGLE:
             return dut.FixedLengthParameter(pid, b'9')
-        elif pid.length == dut.PidLength.DOUBLE:
+        elif pid.length == dut.PID.PidLength.DOUBLE:
             return dut.FixedLengthParameter(pid, b'99')
-        elif pid.length == dut.PidLength.VARIABLE:
+        elif pid.length == dut.PID.PidLength.VARIABLE:
             return dut.VariableLengthParameter(pid, b'')
-        elif pid.length == dut.PidLength.DLESCAPE:
+        elif pid.length == dut.PID.PidLength.DLESCAPE:
             return dut.DataLinkEscapeParameter(pid, 123, b'')
         else:
             raise RuntimeError('should be unreachable')
@@ -266,6 +296,15 @@ class TestMessage(unittest.TestCase):
                 for i in [*TestPID.UNEXTENDED_PIDS,
                           *TestPID.EXTENDED_PIDS]
             ])
+
+        # lists with non-Parameter instances should ValueError
+        for parameters in [
+            [*[self._parameter_from_pid(dut.PID(i))
+               for i in TestPID.EXTENDED_PIDS],
+             None]
+        ]:
+            with self.assertRaises(ValueError):
+                dut.Message.check_parameters(parameters)
 
         # list of one DataLinkEscapeParameter should pass
         dut.Message.check_parameters([

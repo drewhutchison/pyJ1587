@@ -1,0 +1,4 @@
+***************
+Module contents
+***************
+.. automodule:: pyJ1587
