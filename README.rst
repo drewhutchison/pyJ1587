@@ -16,7 +16,11 @@ If you're just looking to *consume* J1587 data, you might be better served by
 one of the `additional resources <Additional resources>`_, some of which include
 semantic interpretation of the data, direct integration with pyserial, *etc*.
 
-.. include:: doc/format.rst
+**************
+Message format
+**************
+
+See `here <./doc/format.rst>`_
 
 ****************
 Package overview
@@ -88,8 +92,9 @@ TODO
 - Implement dunder methods: friendly ``__str__`` representation
   and ``__eq__``, minimally
 - Document more examples
-- Fix doc since github doesn't honor ``include::``s
-  For now: `format <doc/format.rst>`_,
-  `additional resources <doc/additional_resources.rst>`_
 
-.. include:: doc/additional_resources.rst
+********************
+Additional resources
+********************
+
+See `here <./doc/additional_resources.rst>`_
