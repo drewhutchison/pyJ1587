@@ -13,14 +13,15 @@ ad-hoc implementation.
 Someone needing to generate or simulate J1587 traffic might find it
 similarly useful.
 If you're just looking to *consume* J1587 data, you might be better served by
-one of the `additional resources <Additional resources>`_, some of which include
+one of the `additional resources`_, some of which include
 semantic interpretation of the data, direct integration with pyserial, *etc*.
 
 **************
 Message format
 **************
 
-See `here <./doc/format.rst>`_
+Details of the J1587 messaging format are described
+`here <./doc/format.rst>`_.
 
 ****************
 Package overview
@@ -58,6 +59,12 @@ As an example::
 More complete documentation is available when built as described in the next
 section.
 
+**********
+Installing
+**********
+
+``python setup.py install``
+
 ************
 Building doc
 ************
@@ -83,6 +90,11 @@ Changelog
 
 Initial release
 
+0.2
+---
+
+WIP
+
 ****
 TODO
 ****
@@ -97,4 +109,6 @@ TODO
 Additional resources
 ********************
 
-See `here <./doc/additional_resources.rst>`_
+`Additional resources`_
+
+.. _Additional resources: ./doc/additional_resources.rst
