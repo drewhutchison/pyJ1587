@@ -2,6 +2,11 @@
 SAE J1587 Format
 ****************
 
+This section describes the SAE J1587 messaging format at a level
+suitable for making sense of the package API.
+It is notably *not* a replacement for the standard itself, which is
+available on a paid basis from SAE.
+
 Messages
 --------
 

@@ -97,6 +97,8 @@ from typing import List, Union
 # Best practice is to use this whenever calling either of these functions.
 _LITTLE_ENDIAN = 'little'
 
+__version__ = '0.1'
+
 
 class PID:
     """
@@ -473,7 +475,7 @@ class Message:
 
     @classmethod
     def strip_checksum(cls, s: bytes) -> bytes:
-        # TODO doc
+        # TODO doc, test
         head = s[:-1]
         expected_checksum = cls.calc_checksum(head)
         provided_checksum = s[-1]

@@ -22,6 +22,38 @@ semantic interpretation of the data, direct integration with pyserial, *etc*.
 Package overview
 ****************
 
+The module provides several read-only record classes for representing the
+concepts described above.
+
+The ``Message`` class is represents messages, which can be output as ``bytes``
+(including checksum and framing data) via its ``to_bytes()`` method.
+It is initialized with an integer MID and a nonempty list of ``Parameter``
+instances.
+Implementations of this are
+``FixedLengthParameter``,
+``VariableLengthParameter``, and
+``DataLinkEscapeParameter``
+(depending on the length and format of the parameter's value).
+Each of these is instantiated with a ``PID`` instance and a suitably-sized
+``bytes`` object representing this value.
+
+As an example::
+
+    >>> from pyJ1587 import *
+
+    >>> Message(
+            195,
+            [VariableLengthParameter(
+                PID(501),
+                b'Hello world'
+            )]
+        ).to_bytes()
+
+    b'\xc3\xff\xf5\x0bHello world\x02'
+
+More complete documentation is available when built as described in the next
+section.
+
 ************
 Building doc
 ************
@@ -34,16 +66,27 @@ Doc will be generated in ``doc/build/html``.
 Running test
 ************
 
+For now,
+
+``python -m unittest discover -s pyJ1587/test/``
+
 *********
 Changelog
 *********
+
+0.1
+---
+
+Initial release
 
 ****
 TODO
 ****
 
-- installer
-- Parsing of bytestream to Message objects
-- __str__ representation
+- Improve installer, publish to pypi
+- Implement parsing of bytestream to ``Message`` objects
+- Implement dunder methods: friendly ``__str__`` representation
+  and ``__eq__``, minimally
+- Document more examples
 
 .. include:: doc/additional_resources.rst

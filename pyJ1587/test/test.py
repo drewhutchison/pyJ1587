@@ -249,13 +249,56 @@ class TestMessage(unittest.TestCase):
             msg.to_bytes()
 
     def test_parameters(self):
-        # TODO test getter
-        pass
+        # "parameters" argument to constructor should be exposed as property,
+        # for now, `is` will suffice for comparison.
+        l = [dut.FixedLengthParameter(dut.PID(23), b'')]
+        msg = dut.Message(123, l)
+        self.assertIs(msg.parameters, l)
 
     def test_to_bytes(self):
-        # TODO impl
-        # include list of two page-2 parameters to make sure we do that right
-        pass
+        # if we're going to catch regressions, here's where we're going to do it
+        # special cases ahoy!
+        for pid, params, expected in [
+            # single P1 single-length
+            (0,
+             [
+                 dut.FixedLengthParameter(dut.PID(1), b'\x88')
+             ],
+             b'\x00\x01\x88\x77'),
+            (1,
+             [
+                 dut.FixedLengthParameter(dut.PID(1), b'\x08')
+             ],
+             b'\x01\x01\x08\xf6'),
+            (0x0c,
+             [
+                 dut.FixedLengthParameter(dut.PID(1), b'\x88')
+             ],
+             b'\x0c\x01\x88\x6b'),
+            # double P1 single-length
+            (0,
+             [
+                 dut.FixedLengthParameter(dut.PID(1), b'\x88'),
+                 dut.FixedLengthParameter(dut.PID(1), b'\x88')
+             ],
+             b'\x00\x01\x88\x01\x88\xee'),
+            # single P2 single-length
+            (0x17,
+             [
+                 dut.FixedLengthParameter(dut.PID(0x0105), b'\x99')
+             ],
+             b'\x17\xff\x05\x99\x4c'),
+            # double P2 single-length
+            (0x25,
+             [
+                 dut.FixedLengthParameter(dut.PID(0x0105), b'\x99'),
+                 dut.FixedLengthParameter(dut.PID(0x0105), b'\x99')
+             ],
+             b'\x25\xff\x05\x99\x05\x99\xa0'),
+            # TODO lots more cases
+        ]:
+            msg = dut.Message(pid, params)
+            self.assertEqual(msg.to_bytes(), expected)
 
     @staticmethod
     def _parameter_from_pid(pid: dut.PID) -> dut.Parameter:
