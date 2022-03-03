@@ -88,5 +88,8 @@ TODO
 - Implement dunder methods: friendly ``__str__`` representation
   and ``__eq__``, minimally
 - Document more examples
+- Fix doc since github doesn't honor ``include::``s
+  For now: `format <doc/format.rst>`_,
+  `additional resources <doc/additional_resources.rst>`_
 
 .. include:: doc/additional_resources.rst
