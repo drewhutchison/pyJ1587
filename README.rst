@@ -111,4 +111,4 @@ Additional resources
 
 `Additional resources`_
 
-.. _Additional resources: ./doc/additional_resources.rst
+.. _additional resources: ./doc/additional_resources.rst
