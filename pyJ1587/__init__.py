@@ -347,7 +347,7 @@ class Message:
 
     Thus, it's not guaranteed that a general instance will successfully return
     :py:meth:`to_bytes`, and there's no easier way to check than by attempting
-    such a call.
+    such a call and checking for ValueError.
     """
 
     def __init__(self,
