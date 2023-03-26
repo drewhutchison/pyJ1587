@@ -73,6 +73,10 @@ class TestPID(unittest.TestCase):
         self.assertEqual(one, same)
         self.assertNotEqual(one, other)
 
+    def test___str__(self):
+        one = dut.PID(0)
+        self.assertEqual('PID(0)', str(one))
+
 
 class TestParameter(unittest.TestCase):
 
@@ -166,6 +170,24 @@ class TestFixedLengthParameter(unittest.TestCase):
             parameter = dut.FixedLengthParameter(dut.PID(i), b'88')
             self.assertEqual(len(parameter.to_bytes()), 3)
 
+    def test___str__(self):
+        cases = [
+            (
+                "Length-1 parameter (PID(12), b'8')",
+                str(dut.FixedLengthParameter(dut.PID(12), b'8'))
+            ),
+            (
+                "Length-2 parameter (PID(191), b'8')",
+                str(dut.FixedLengthParameter(dut.PID(191), b'8'))
+            ),
+            (
+                "Length-2 parameter (PID(191), b'89')",
+                str(dut.FixedLengthParameter(dut.PID(191), b'89'))
+            ),
+        ]
+        for expected, param in cases:
+            self.assertEqual(expected, str(param))
+
 
 class TestVariableLengthParameter(unittest.TestCase):
 
@@ -200,6 +222,20 @@ class TestVariableLengthParameter(unittest.TestCase):
                 dut.PID(i), v).to_bytes(),
                              b)
 
+    def test___str__(self):
+        cases = [
+            (
+                "Length-2 parameter (PID(192), b'89')",
+                str(dut.VariableLengthParameter(dut.PID(192), b'89'))
+            ),
+            (
+                "Length-4 parameter (PID(192), b'8912')",
+                str(dut.VariableLengthParameter(dut.PID(192), b'8912'))
+            ),
+        ]
+        for expected, param in cases:
+            self.assertEqual(expected, str(param))
+
 
 class TestDataLinkEscapeParameter(unittest.TestCase):
 
@@ -230,6 +266,16 @@ class TestDataLinkEscapeParameter(unittest.TestCase):
         ]:
             self.assertEqual(dut.DataLinkEscapeParameter(
                 dut.PID(i), addressee, payload).to_bytes(), value)
+
+    def test___str__(self):
+        cases = [
+            (
+                "Length-1 data link escape parameter (PID(254), MID=123, b'8')",
+                str(dut.DataLinkEscapeParameter(dut.PID(254), 123, b'8'))
+            ),
+        ]
+        for expected, param in cases:
+            self.assertEqual(expected, str(param))
 
 
 class TestMessage(unittest.TestCase):
@@ -495,3 +541,19 @@ class TestMessage(unittest.TestCase):
                     self.assertEqual(icases[i], jcases[j])
                 else:
                     self.assertNotEqual(icases[i], jcases[j])
+
+    def test___str__(self):
+        cases = [
+            ("Message object (MID=0, params=[Length-1 parameter (PID(1), b'\\x88')])",
+             (0, [
+                 dut.FixedLengthParameter(dut.PID(1), b'\x88')
+             ])),
+            ("Message object (MID=0, params=[Length-1 parameter (PID(1), b'\\x88'), "
+             "Length-1 parameter (PID(1), b'\\x88')])",
+             (0, [
+                 dut.FixedLengthParameter(dut.PID(1), b'\x88'),
+                 dut.FixedLengthParameter(dut.PID(1), b'\x88')
+             ])),
+        ]
+        for expected, args in cases:
+            self.assertEqual(expected, str(dut.Message(*args)))

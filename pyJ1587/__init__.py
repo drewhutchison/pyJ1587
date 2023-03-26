@@ -147,6 +147,9 @@ class PID:
     def __eq__(self, other):
         return self.i == other.i
 
+    def __str__(self):
+        return f'PID({self.i})'
+
     def to_bytes(self) -> bytes:
         """
         :return: length-1 :py:class:`bytes` representation of the LSB of this PID.
@@ -210,6 +213,9 @@ class Parameter(abc.ABC):
 
     def __eq__(self, other):
         return self.pid == other.pid and self.value == other.value
+
+    def __str__(self):
+        return f'Length-{self._varlength} parameter ({self.pid}, {self.value})'
 
     @property
     def pid(self) -> PID:
@@ -322,6 +328,10 @@ class DataLinkEscapeParameter(Parameter):
         super().__init__(pid, value, len(value))
         self._addressee = addressee
 
+    def __str__(self):
+        return (f'Length-{self._varlength} data link escape parameter '
+                f'({self.pid}, MID={self.addressee}, {self.value})')
+
     @property
     def addressee(self) -> int:
         """MID of this message's addressee"""
@@ -370,6 +380,11 @@ class Message:
                         for p1, p2
                         in zip(self.parameters, other.parameters))
                 )
+
+    def __str__(self):
+        return (f'Message object (MID={self.mid}, params=['
+                f'{", ".join(([str(param) for param in self.parameters]))}'
+                f'])')
 
     @property
     def mid(self) -> int:
