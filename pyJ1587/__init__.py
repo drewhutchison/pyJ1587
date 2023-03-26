@@ -249,7 +249,7 @@ class FixedLengthParameter(Parameter):
         elif pid.length is PID.PidLength.DOUBLE:
             super().__init__(pid, value, 2)
         elif pid.length is PID.PidLength.VARIABLE:
-            raise ValueError('variable-length parameters should use class'
+            raise ValueError('variable-length parameters should use class '
                              'VariableLengthParameter')
         elif pid.length is PID.PidLength.DLESCAPE:
             raise ValueError('data link parameters should use class'
