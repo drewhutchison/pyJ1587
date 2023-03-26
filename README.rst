@@ -89,8 +89,6 @@ TODO
 
 - Improve installer, publish to pypi
 - Implement parsing of bytestream to ``Message`` objects
-- Implement dunder methods: friendly ``__str__`` representation
-  and ``__eq__``, minimally
 - Document more examples
 
 ********************
