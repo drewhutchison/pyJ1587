@@ -195,11 +195,11 @@ class Parameter(abc.ABC):
     Future versions might include convenience methods for casting this, though
     doing so from the :py:class:`bytes` object is not difficult.
     """
+
     def __init__(self,
                  pid: PID,
                  value: bytes,
                  length: int):
-
         if len(value) > length:
             raise ValueError(f'value {value} exceeds length {length} of '
                              f'"{self.__class__.__name__}" instance')
@@ -241,6 +241,7 @@ class FixedLengthParameter(Parameter):
     :paramref:`pid` and, if necessary will be left-padded with zeros to make up
     this length in the return of :py:meth:`to_bytes`.
     """
+
     def __init__(self, pid: PID, value: bytes):
 
         if pid.length is PID.PidLength.SINGLE:
@@ -271,6 +272,7 @@ class VariableLengthParameter(Parameter):
                    return of :py:meth:`to_bytes` to make up the difference.
                    If not specified, defaults to ``len(value)``.
     """
+
     def __init__(self,
                  pid: PID,
                  value: bytes,
@@ -304,6 +306,7 @@ class DataLinkEscapeParameter(Parameter):
 
     :param addressee: MID of addressee
     """
+
     def __init__(self,
                  pid: PID,
                  addressee: int,
