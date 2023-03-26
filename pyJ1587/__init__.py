@@ -144,6 +144,9 @@ class PID:
             raise ValueError('Page 2 extension is not supported')
         self._i = i
 
+    def __eq__(self, other):
+        return self.i == other.i
+
     def to_bytes(self) -> bytes:
         """
         :return: length-1 :py:class:`bytes` representation of the LSB of this PID.
@@ -204,6 +207,9 @@ class Parameter(abc.ABC):
         self._pid = pid
         self._value = value
         self._varlength = length
+
+    def __eq__(self, other):
+        return self.pid == other.pid and self.value == other.value
 
     @property
     def pid(self) -> PID:
@@ -353,6 +359,14 @@ class Message:
         self._mid = mid
 
         self._parameters = parameters
+
+    def __eq__(self, other):
+        return (self.mid == other.mid
+                and len(self.parameters) == len(other.parameters)
+                and all(p1 == p2
+                        for p1, p2
+                        in zip(self.parameters, other.parameters))
+                )
 
     @property
     def mid(self) -> int:

@@ -4,7 +4,6 @@ import pyJ1587 as dut
 
 
 class TestPID(unittest.TestCase):
-
     SINGLE_LENGTH_PIDS = [0, 1, 12, 127, 256, 383]
     DOUBLE_LENGTH_PIDS = [128, 191, 384, 447]
     VARIABLE_LENGTH_PIDS = [192, 253, 448, 509]
@@ -67,6 +66,13 @@ class TestPID(unittest.TestCase):
         with self.assertRaises(ValueError):
             _ = pid.length
 
+    def test___eq__(self):
+        one = dut.PID(0)
+        same = dut.PID(0)
+        other = dut.PID(1)
+        self.assertEqual(one, same)
+        self.assertNotEqual(one, other)
+
 
 class TestParameter(unittest.TestCase):
 
@@ -92,6 +98,25 @@ class TestParameter(unittest.TestCase):
     def test_length_check(self):
         with self.assertRaises(ValueError):
             dut.Parameter(dut.PID(0), b'abc', 1)
+
+    @unabstract
+    def test___eq__(self):
+        cases = [
+            dut.Parameter(dut.PID(i), v, l)
+            for i, v, l in [
+                (0, b'8', 1),
+                (0, b'9', 1),
+                (1, b'8', 1),
+                (128, b'88', 2),
+                (191, b'88', 2),
+                (0xc1, b'34', 2),
+            ]]
+        for i in range(len(cases)):
+            for j in range(len(cases)):
+                if i == j:
+                    self.assertEqual(cases[i], cases[j])
+                else:
+                    self.assertNotEqual(cases[i], cases[j])
 
 
 class TestFixedLengthParameter(unittest.TestCase):
@@ -243,7 +268,7 @@ class TestMessage(unittest.TestCase):
             msg.to_bytes()
 
         # we should be able to successfully instantiate with too many params
-        msg = dut.Message(1, [dut.FixedLengthParameter(dut.PID(1), b'a')]*10)
+        msg = dut.Message(1, [dut.FixedLengthParameter(dut.PID(1), b'a')] * 10)
         # but to_bytes should then fail
         with self.assertRaises(ValueError):
             msg.to_bytes()
@@ -433,3 +458,40 @@ class TestMessage(unittest.TestCase):
         ]:
             with self.assertRaises(ValueError):
                 dut.Message.strip_checksum(s)
+
+    def test___eq__(self):
+        args = [
+            (0, [
+                dut.FixedLengthParameter(dut.PID(1), b'\x88')
+            ]),
+            (1, [
+                dut.FixedLengthParameter(dut.PID(1), b'\x08')
+            ]),
+            (0x0c,
+             [
+                 dut.FixedLengthParameter(dut.PID(1), b'\x88')
+             ]),
+            (0, [
+                dut.FixedLengthParameter(dut.PID(1), b'\x88'),
+                dut.FixedLengthParameter(dut.PID(1), b'\x88')
+            ]),
+            (0x17, [
+                dut.FixedLengthParameter(dut.PID(0x0105), b'\x99')
+            ]),
+            (0x25, [
+                dut.FixedLengthParameter(dut.PID(0x0105), b'\x99'),
+                dut.FixedLengthParameter(dut.PID(0x0105), b'\x99')
+            ]),
+        ]
+        jcases = [
+            dut.Message(pid, params)
+            for pid, params in args]
+        icases = [
+            dut.Message(pid, params)
+            for pid, params in args]
+        for i in range(len(args)):
+            for j in range(len(args)):
+                if i == j:
+                    self.assertEqual(icases[i], jcases[j])
+                else:
+                    self.assertNotEqual(icases[i], jcases[j])
