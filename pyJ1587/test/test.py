@@ -230,7 +230,7 @@ class TestMessage(unittest.TestCase):
                            (0xff, b'\xff')]:
             m = dut.Message(i, [])
             self.assertEqual(m.mid_as_bytes,
-                             i.to_bytes(1, dut._LITTLE_ENDIAN))
+                             i.to_bytes(1, 'little'))
 
     def test_unrepresentable(self):
         # per the documentation, we should be able to instantiate cases without

@@ -89,14 +89,6 @@ import abc
 from enum import Enum, auto
 from typing import List, Union
 
-# We're going to be calling int.to_bytes and int.from_bytes a LOT
-# These take a string argument 'big' or 'little', with other values raising
-# ValueError.
-# To avoid fatfingering the magic strings, and to allow better code
-# introspection, we therefore define the following constant.
-# Best practice is to use this whenever calling either of these functions.
-_LITTLE_ENDIAN = 'little'
-
 __version__ = '0.1'
 
 
@@ -166,7 +158,7 @@ class PID:
            see the messaging format and/or implementation of
            :py:meth:`Message.to_bytes` for why.
         """
-        return (self._i % 256).to_bytes(1, _LITTLE_ENDIAN)
+        return (self._i % 256).to_bytes(1, 'little')
 
     @property
     def i(self) -> int:
@@ -291,7 +283,7 @@ class VariableLengthParameter(Parameter):
             super().__init__(pid, value, len(value))
 
     def to_bytes(self) -> bytes:
-        length = self._varlength.to_bytes(1, _LITTLE_ENDIAN)
+        length = self._varlength.to_bytes(1, 'little')
         return self.pid.to_bytes() + length + self.value
 
 
@@ -327,7 +319,7 @@ class DataLinkEscapeParameter(Parameter):
         return self._addressee
 
     def to_bytes(self) -> bytes:
-        addresseebytes = self.addressee.to_bytes(1, _LITTLE_ENDIAN)
+        addresseebytes = self.addressee.to_bytes(1, 'little')
         return self.pid.to_bytes() + addresseebytes + self.value
 
 
@@ -370,7 +362,7 @@ class Message:
     @property
     def mid_as_bytes(self) -> bytes:
         """MID of the message as :py:class:`bytes`"""
-        return self.mid.to_bytes(1, _LITTLE_ENDIAN)
+        return self.mid.to_bytes(1, 'little')
 
     @property
     def parameters(self) -> List[Parameter]:
@@ -471,7 +463,7 @@ class Message:
         l = len(s)
         if l > 20:
             raise ValueError(f'"{s}" (length {l}) exceeds max length 20')
-        return s + cls.calc_checksum(s).to_bytes(1, _LITTLE_ENDIAN)
+        return s + cls.calc_checksum(s).to_bytes(1, 'little')
 
     @classmethod
     def strip_checksum(cls, s: bytes) -> bytes:
