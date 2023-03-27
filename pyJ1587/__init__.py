@@ -192,7 +192,7 @@ class Parameter(abc.ABC):
     Instead, use one of its subclasses below.
 
     :py:attr:`value` is stored and returned as :py:class:`bytes`, since
-    interpretation of these (as signed/unsigned, int, float, or ascii, etc) is
+    interpretation of these (as signed/unsigned, int, float, or ascii, etc.) is
     determined also by the PID in a manner determined by the SAE specification
     and beyond the scope of this implementation.
     Future versions might include convenience methods for casting this, though
@@ -451,7 +451,7 @@ class Message:
                    for parameter in parameters]
         if any(is_dles):
             # if we're here, we have at least one DLE.
-            # Thus we require the last element be a DLE.
+            # Thus, we require the last element be a DLE.
             # If there is more than one, at least one of those is not the last
             # element.
             if not is_dles[-1] or sum(is_dles) > 1:
