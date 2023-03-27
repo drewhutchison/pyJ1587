@@ -83,13 +83,22 @@ Changelog
 
 Initial release
 
+
+0.2
+---
+
+- Implement `__str__` and `__eq__` methods
+- Implement `Message.from_bytes`
+
 ****
 TODO
 ****
 
 - Improve installer, publish to pypi
-- Implement parsing of bytestream to ``Message`` objects
 - Document more examples
+- Add test cases
+- Define CI to run test and automate doc generation
+- Clean up API; most utility methods should be hidden
 
 ********************
 Additional resources
