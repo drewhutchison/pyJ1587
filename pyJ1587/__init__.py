@@ -499,7 +499,6 @@ class Message:
 
     @classmethod
     def strip_checksum(cls, s: bytes) -> bytes:
-        # TODO doc, test
         head = s[:-1]
         expected_checksum = cls.calc_checksum(head)
         provided_checksum = s[-1]
@@ -508,3 +507,49 @@ class Message:
                              f'provided checksum {provided_checksum} differs'
                              f'from expected value {expected_checksum}')
         return head
+
+    @classmethod
+    def generate_parameters(cls, b: bytes):
+
+        i = 0  # index variable pointing to current position in b
+
+        if b[0] == 0xff:
+            # this "is an extension PID. All characters in this message
+            # excluding the message checksum following an extension PID are to
+            # be interpreted using PID 256 to 511 definitions. When receiving
+            # PID 255 data, a value of 256 should be added to the PIDs received
+            # to determine their page 2 PID identification."
+            offset = 256
+            i += 1
+        else:
+            offset = 0
+
+        while i < len(b):
+            pid = PID(b[i] + offset)
+            i += 1
+            if pid.length == PID.PidLength.SINGLE:
+                yield FixedLengthParameter(pid, b[i:i+1])
+                i += 1
+            elif pid.length == PID.PidLength.DOUBLE:
+                yield FixedLengthParameter(pid, b[i:i+2])
+                i += 2
+            elif pid.length == PID.PidLength.VARIABLE:
+                l = int.from_bytes(b[i:i+1], 'little')
+                i += 1
+                yield VariableLengthParameter(pid, b[i:i+l])
+                i += l
+            elif pid.length == PID.PidLength.DLESCAPE:
+                mid = int.from_bytes(b[i:i + 1], 'little')
+                i += 1
+                yield DataLinkEscapeParameter(pid, mid, b[i:])
+                i = len(b)
+            else:
+                raise ValueError(f"unrecognized pid {PID} at position {i}")
+
+    @classmethod
+    def from_bytes(cls, b: bytes) -> Message:
+        head = cls.strip_checksum(b)
+        mid = int.from_bytes(head[:1], 'little')
+        parameters = [*cls.generate_parameters(head[1:])]
+
+        return Message(mid, parameters)

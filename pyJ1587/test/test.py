@@ -279,6 +279,45 @@ class TestDataLinkEscapeParameter(unittest.TestCase):
 
 
 class TestMessage(unittest.TestCase):
+    test_cases = [
+        # single P1 single-length
+        (0,
+         [
+             dut.FixedLengthParameter(dut.PID(1), b'\x88')
+         ],
+         b'\x00\x01\x88\x77'),
+        (1,
+         [
+             dut.FixedLengthParameter(dut.PID(1), b'\x08')
+         ],
+         b'\x01\x01\x08\xf6'),
+        (0x0c,
+         [
+             dut.FixedLengthParameter(dut.PID(1), b'\x88')
+         ],
+         b'\x0c\x01\x88\x6b'),
+        # double P1 single-length
+        (0,
+         [
+             dut.FixedLengthParameter(dut.PID(1), b'\x88'),
+             dut.FixedLengthParameter(dut.PID(1), b'\x88')
+         ],
+         b'\x00\x01\x88\x01\x88\xee'),
+        # single P2 single-length
+        (0x17,
+         [
+             dut.FixedLengthParameter(dut.PID(0x0105), b'\x99')
+         ],
+         b'\x17\xff\x05\x99\x4c'),
+        # double P2 single-length
+        (0x25,
+         [
+             dut.FixedLengthParameter(dut.PID(0x0105), b'\x99'),
+             dut.FixedLengthParameter(dut.PID(0x0105), b'\x99')
+         ],
+         b'\x25\xff\x05\x99\x05\x99\xa0'),
+        # TODO lots more cases
+    ]
 
     def test_mid(self):
 
@@ -329,51 +368,12 @@ class TestMessage(unittest.TestCase):
     def test_to_bytes(self):
         # if we're going to catch regressions, here's where we're going to do it
         # special cases ahoy!
-        for pid, params, expected in [
-            # single P1 single-length
-            (0,
-             [
-                 dut.FixedLengthParameter(dut.PID(1), b'\x88')
-             ],
-             b'\x00\x01\x88\x77'),
-            (1,
-             [
-                 dut.FixedLengthParameter(dut.PID(1), b'\x08')
-             ],
-             b'\x01\x01\x08\xf6'),
-            (0x0c,
-             [
-                 dut.FixedLengthParameter(dut.PID(1), b'\x88')
-             ],
-             b'\x0c\x01\x88\x6b'),
-            # double P1 single-length
-            (0,
-             [
-                 dut.FixedLengthParameter(dut.PID(1), b'\x88'),
-                 dut.FixedLengthParameter(dut.PID(1), b'\x88')
-             ],
-             b'\x00\x01\x88\x01\x88\xee'),
-            # single P2 single-length
-            (0x17,
-             [
-                 dut.FixedLengthParameter(dut.PID(0x0105), b'\x99')
-             ],
-             b'\x17\xff\x05\x99\x4c'),
-            # double P2 single-length
-            (0x25,
-             [
-                 dut.FixedLengthParameter(dut.PID(0x0105), b'\x99'),
-                 dut.FixedLengthParameter(dut.PID(0x0105), b'\x99')
-             ],
-             b'\x25\xff\x05\x99\x05\x99\xa0'),
-            # TODO lots more cases
-        ]:
+        for pid, params, expected in self.test_cases:
             msg = dut.Message(pid, params)
             self.assertEqual(msg.to_bytes(), expected)
 
     @staticmethod
     def _parameter_from_pid(pid: dut.PID) -> dut.Parameter:
-
         if pid.length == dut.PID.PidLength.SINGLE:
             return dut.FixedLengthParameter(pid, b'9')
         elif pid.length == dut.PID.PidLength.DOUBLE:
@@ -386,7 +386,6 @@ class TestMessage(unittest.TestCase):
             raise RuntimeError('should be unreachable')
 
     def test_check_parameters(self):
-
         # empty list should ValueError
         with self.assertRaises(ValueError):
             dut.Message.check_parameters([])
@@ -557,3 +556,8 @@ class TestMessage(unittest.TestCase):
         ]
         for expected, args in cases:
             self.assertEqual(expected, str(dut.Message(*args)))
+
+    def test_from_bytes(self):
+        for pid, params, bytes_ in self.test_cases:
+            msg = dut.Message(pid, params)
+            self.assertEqual(msg, dut.Message.from_bytes(bytes_))
