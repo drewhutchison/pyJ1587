@@ -4,7 +4,6 @@ import pyJ1587 as dut
 
 
 class TestPID(unittest.TestCase):
-
     SINGLE_LENGTH_PIDS = [0, 1, 12, 127, 256, 383]
     DOUBLE_LENGTH_PIDS = [128, 191, 384, 447]
     VARIABLE_LENGTH_PIDS = [192, 253, 448, 509]
@@ -67,6 +66,17 @@ class TestPID(unittest.TestCase):
         with self.assertRaises(ValueError):
             _ = pid.length
 
+    def test___eq__(self):
+        one = dut.PID(0)
+        same = dut.PID(0)
+        other = dut.PID(1)
+        self.assertEqual(one, same)
+        self.assertNotEqual(one, other)
+
+    def test___str__(self):
+        one = dut.PID(0)
+        self.assertEqual('PID(0)', str(one))
+
 
 class TestParameter(unittest.TestCase):
 
@@ -92,6 +102,25 @@ class TestParameter(unittest.TestCase):
     def test_length_check(self):
         with self.assertRaises(ValueError):
             dut.Parameter(dut.PID(0), b'abc', 1)
+
+    @unabstract
+    def test___eq__(self):
+        cases = [
+            dut.Parameter(dut.PID(i), v, l)
+            for i, v, l in [
+                (0, b'8', 1),
+                (0, b'9', 1),
+                (1, b'8', 1),
+                (128, b'88', 2),
+                (191, b'88', 2),
+                (0xc1, b'34', 2),
+            ]]
+        for i in range(len(cases)):
+            for j in range(len(cases)):
+                if i == j:
+                    self.assertEqual(cases[i], cases[j])
+                else:
+                    self.assertNotEqual(cases[i], cases[j])
 
 
 class TestFixedLengthParameter(unittest.TestCase):
@@ -141,6 +170,24 @@ class TestFixedLengthParameter(unittest.TestCase):
             parameter = dut.FixedLengthParameter(dut.PID(i), b'88')
             self.assertEqual(len(parameter.to_bytes()), 3)
 
+    def test___str__(self):
+        cases = [
+            (
+                "Length-1 parameter (PID(12), b'8')",
+                str(dut.FixedLengthParameter(dut.PID(12), b'8'))
+            ),
+            (
+                "Length-2 parameter (PID(191), b'8')",
+                str(dut.FixedLengthParameter(dut.PID(191), b'8'))
+            ),
+            (
+                "Length-2 parameter (PID(191), b'89')",
+                str(dut.FixedLengthParameter(dut.PID(191), b'89'))
+            ),
+        ]
+        for expected, param in cases:
+            self.assertEqual(expected, str(param))
+
 
 class TestVariableLengthParameter(unittest.TestCase):
 
@@ -175,6 +222,20 @@ class TestVariableLengthParameter(unittest.TestCase):
                 dut.PID(i), v).to_bytes(),
                              b)
 
+    def test___str__(self):
+        cases = [
+            (
+                "Length-2 parameter (PID(192), b'89')",
+                str(dut.VariableLengthParameter(dut.PID(192), b'89'))
+            ),
+            (
+                "Length-4 parameter (PID(192), b'8912')",
+                str(dut.VariableLengthParameter(dut.PID(192), b'8912'))
+            ),
+        ]
+        for expected, param in cases:
+            self.assertEqual(expected, str(param))
+
 
 class TestDataLinkEscapeParameter(unittest.TestCase):
 
@@ -206,8 +267,57 @@ class TestDataLinkEscapeParameter(unittest.TestCase):
             self.assertEqual(dut.DataLinkEscapeParameter(
                 dut.PID(i), addressee, payload).to_bytes(), value)
 
+    def test___str__(self):
+        cases = [
+            (
+                "Length-1 data link escape parameter (PID(254), MID=123, b'8')",
+                str(dut.DataLinkEscapeParameter(dut.PID(254), 123, b'8'))
+            ),
+        ]
+        for expected, param in cases:
+            self.assertEqual(expected, str(param))
+
 
 class TestMessage(unittest.TestCase):
+    test_cases = [
+        # single P1 single-length
+        (0,
+         [
+             dut.FixedLengthParameter(dut.PID(1), b'\x88')
+         ],
+         b'\x00\x01\x88\x77'),
+        (1,
+         [
+             dut.FixedLengthParameter(dut.PID(1), b'\x08')
+         ],
+         b'\x01\x01\x08\xf6'),
+        (0x0c,
+         [
+             dut.FixedLengthParameter(dut.PID(1), b'\x88')
+         ],
+         b'\x0c\x01\x88\x6b'),
+        # double P1 single-length
+        (0,
+         [
+             dut.FixedLengthParameter(dut.PID(1), b'\x88'),
+             dut.FixedLengthParameter(dut.PID(1), b'\x88')
+         ],
+         b'\x00\x01\x88\x01\x88\xee'),
+        # single P2 single-length
+        (0x17,
+         [
+             dut.FixedLengthParameter(dut.PID(0x0105), b'\x99')
+         ],
+         b'\x17\xff\x05\x99\x4c'),
+        # double P2 single-length
+        (0x25,
+         [
+             dut.FixedLengthParameter(dut.PID(0x0105), b'\x99'),
+             dut.FixedLengthParameter(dut.PID(0x0105), b'\x99')
+         ],
+         b'\x25\xff\x05\x99\x05\x99\xa0'),
+        # TODO lots more cases
+    ]
 
     def test_mid(self):
 
@@ -230,7 +340,7 @@ class TestMessage(unittest.TestCase):
                            (0xff, b'\xff')]:
             m = dut.Message(i, [])
             self.assertEqual(m.mid_as_bytes,
-                             i.to_bytes(1, dut._LITTLE_ENDIAN))
+                             i.to_bytes(1, 'little'))
 
     def test_unrepresentable(self):
         # per the documentation, we should be able to instantiate cases without
@@ -243,7 +353,7 @@ class TestMessage(unittest.TestCase):
             msg.to_bytes()
 
         # we should be able to successfully instantiate with too many params
-        msg = dut.Message(1, [dut.FixedLengthParameter(dut.PID(1), b'a')]*10)
+        msg = dut.Message(1, [dut.FixedLengthParameter(dut.PID(1), b'a')] * 10)
         # but to_bytes should then fail
         with self.assertRaises(ValueError):
             msg.to_bytes()
@@ -258,51 +368,12 @@ class TestMessage(unittest.TestCase):
     def test_to_bytes(self):
         # if we're going to catch regressions, here's where we're going to do it
         # special cases ahoy!
-        for pid, params, expected in [
-            # single P1 single-length
-            (0,
-             [
-                 dut.FixedLengthParameter(dut.PID(1), b'\x88')
-             ],
-             b'\x00\x01\x88\x77'),
-            (1,
-             [
-                 dut.FixedLengthParameter(dut.PID(1), b'\x08')
-             ],
-             b'\x01\x01\x08\xf6'),
-            (0x0c,
-             [
-                 dut.FixedLengthParameter(dut.PID(1), b'\x88')
-             ],
-             b'\x0c\x01\x88\x6b'),
-            # double P1 single-length
-            (0,
-             [
-                 dut.FixedLengthParameter(dut.PID(1), b'\x88'),
-                 dut.FixedLengthParameter(dut.PID(1), b'\x88')
-             ],
-             b'\x00\x01\x88\x01\x88\xee'),
-            # single P2 single-length
-            (0x17,
-             [
-                 dut.FixedLengthParameter(dut.PID(0x0105), b'\x99')
-             ],
-             b'\x17\xff\x05\x99\x4c'),
-            # double P2 single-length
-            (0x25,
-             [
-                 dut.FixedLengthParameter(dut.PID(0x0105), b'\x99'),
-                 dut.FixedLengthParameter(dut.PID(0x0105), b'\x99')
-             ],
-             b'\x25\xff\x05\x99\x05\x99\xa0'),
-            # TODO lots more cases
-        ]:
+        for pid, params, expected in self.test_cases:
             msg = dut.Message(pid, params)
             self.assertEqual(msg.to_bytes(), expected)
 
     @staticmethod
     def _parameter_from_pid(pid: dut.PID) -> dut.Parameter:
-
         if pid.length == dut.PID.PidLength.SINGLE:
             return dut.FixedLengthParameter(pid, b'9')
         elif pid.length == dut.PID.PidLength.DOUBLE:
@@ -315,7 +386,6 @@ class TestMessage(unittest.TestCase):
             raise RuntimeError('should be unreachable')
 
     def test_check_parameters(self):
-
         # empty list should ValueError
         with self.assertRaises(ValueError):
             dut.Message.check_parameters([])
@@ -433,3 +503,61 @@ class TestMessage(unittest.TestCase):
         ]:
             with self.assertRaises(ValueError):
                 dut.Message.strip_checksum(s)
+
+    def test___eq__(self):
+        args = [
+            (0, [
+                dut.FixedLengthParameter(dut.PID(1), b'\x88')
+            ]),
+            (1, [
+                dut.FixedLengthParameter(dut.PID(1), b'\x08')
+            ]),
+            (0x0c,
+             [
+                 dut.FixedLengthParameter(dut.PID(1), b'\x88')
+             ]),
+            (0, [
+                dut.FixedLengthParameter(dut.PID(1), b'\x88'),
+                dut.FixedLengthParameter(dut.PID(1), b'\x88')
+            ]),
+            (0x17, [
+                dut.FixedLengthParameter(dut.PID(0x0105), b'\x99')
+            ]),
+            (0x25, [
+                dut.FixedLengthParameter(dut.PID(0x0105), b'\x99'),
+                dut.FixedLengthParameter(dut.PID(0x0105), b'\x99')
+            ]),
+        ]
+        jcases = [
+            dut.Message(pid, params)
+            for pid, params in args]
+        icases = [
+            dut.Message(pid, params)
+            for pid, params in args]
+        for i in range(len(args)):
+            for j in range(len(args)):
+                if i == j:
+                    self.assertEqual(icases[i], jcases[j])
+                else:
+                    self.assertNotEqual(icases[i], jcases[j])
+
+    def test___str__(self):
+        cases = [
+            ("Message object (MID=0, params=[Length-1 parameter (PID(1), b'\\x88')])",
+             (0, [
+                 dut.FixedLengthParameter(dut.PID(1), b'\x88')
+             ])),
+            ("Message object (MID=0, params=[Length-1 parameter (PID(1), b'\\x88'), "
+             "Length-1 parameter (PID(1), b'\\x88')])",
+             (0, [
+                 dut.FixedLengthParameter(dut.PID(1), b'\x88'),
+                 dut.FixedLengthParameter(dut.PID(1), b'\x88')
+             ])),
+        ]
+        for expected, args in cases:
+            self.assertEqual(expected, str(dut.Message(*args)))
+
+    def test_from_bytes(self):
+        for pid, params, bytes_ in self.test_cases:
+            msg = dut.Message(pid, params)
+            self.assertEqual(msg, dut.Message.from_bytes(bytes_))
